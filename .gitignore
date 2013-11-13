@@ -1,6 +1,7 @@
 #################
 ## Eclipse
 #################
+/temp_map/AndroidManifest.xml
 
 *.pydevproject
 .project
