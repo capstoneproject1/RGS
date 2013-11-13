@@ -35,20 +35,24 @@ public class Navigation {
 	private LatLng src_loc;
 	private LatLng dest_loc;
 	private HttpClient httpclient;
-	
-	private List<NavigationMarkers> lnm = null;
+	private List<LatLng> smoothMk;
+	private LocQueue<NavigationMarkers> lnm = null;
 	
 	public Navigation(LatLng src_loc, LatLng dest_loc){
 		this.src_loc = src_loc;
 		this.dest_loc = dest_loc;
 	}
 	
-	public List<NavigationMarkers> reqNavigation(){
+	public LocQueue<NavigationMarkers> reqNavigation(){
 		searchNavigation sn = new searchNavigation();
 		sn.start();
 		while(sn.isAlive()){}
 		System.out.println("THREAD IS ALL DONE");
 		return lnm;
+	}
+	
+	public List<LatLng> reqSmooth(){
+		return smoothMk;
 	}
 	
 	public class searchNavigation extends Thread{
@@ -158,20 +162,22 @@ public class Navigation {
 			return null;
 		}
 		
-		public List<NavigationMarkers> parseJSON(String json){
-			List<NavigationMarkers> result = null;
+		public LocQueue<NavigationMarkers> parseJSON(String json){
+			LocQueue<NavigationMarkers> result = null;
 			try{
 				JSONObject object = new JSONObject(json);
 				JSONArray routes = object.getJSONArray("routes");
 				JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
+				String encodePoly = routes.getJSONObject(0).getJSONObject("overview_polyline").getString("points");
 				JSONArray steps = legs.getJSONObject(0).getJSONArray("steps");
 				
 				int len = steps.length();
 				System.out.println(len);
-				result = new ArrayList<NavigationMarkers>();
+				result = new LocQueue<NavigationMarkers>();
 				String to_lat, to_lng, from_lat, from_lng;
 				String announce;
 				String dist, time;
+				String encode_polyline;
 				for (int i = 0; i < len; i++) {
 					
 					announce = steps.getJSONObject(i).getString("html_instructions");
@@ -182,20 +188,68 @@ public class Navigation {
 					to_lng = steps.getJSONObject(i).getJSONObject("end_location").getString("lng");
 					from_lat = steps.getJSONObject(i).getJSONObject("start_location").getString("lat"); 
 					from_lng = steps.getJSONObject(i).getJSONObject("start_location").getString("lng"); 
-					
+					encode_polyline = steps.getJSONObject(i).getJSONObject("polyline").getString("points");
+					LocQueue<LatLng> smoothLoc = getSmoothLoc(encode_polyline);
 					NavigationMarkers nm = new NavigationMarkers(announce, dist, time, to_lat, to_lng, from_lat, from_lng);
+					nm.setSmoothLoc(smoothLoc);
 					result.add(nm);
 					System.out.println("announce: " + announce);
 					System.out.println("latitude: " + from_lat);
 					System.out.println("longitude: " + from_lng);
+					Log.d("polyline: ", encode_polyline);
 				}
-	
+				
+//				smoothMk = decodePoly(encodePoly);
 			}catch (JSONException e){
 				e.printStackTrace();
 			}
 			
 			return result;
 		}
+		
+		private LocQueue<LatLng> getSmoothLoc(String encoded){
+			LocQueue<LatLng> result = new LocQueue<LatLng>();
+			result = decodePoly(encoded);
+			result.pop();
+			result.remove();
+			return result;
+		}
+		
+		private LocQueue<LatLng> decodePoly(String encoded) {
+
+			  LocQueue<LatLng> poly = new LocQueue<LatLng>();
+			  int index = 0, len = encoded.length();
+			  int lat = 0, lng = 0;
+
+			  while (index < len) {
+			      int b, shift = 0, result = 0;
+			      do {
+			          b = encoded.charAt(index++) - 63;
+			          result |= (b & 0x1f) << shift;
+			          shift += 5;
+			      } while (b >= 0x20);
+			      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+			      lat += dlat;
+
+			      shift = 0;
+			      result = 0;
+			      do {
+			          b = encoded.charAt(index++) - 63;
+			          result |= (b & 0x1f) << shift;
+			          shift += 5;
+			      } while (b >= 0x20);
+			      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+			      lng += dlng;
+
+			      LatLng p = new LatLng(((double) lat / 1E5),
+			           ((double) lng / 1E5));
+			      Log.e(String.valueOf((double) lat / 1E5),
+			    		  String.valueOf((double) lng / 1E5));
+			      poly.add(p);
+			  }
+
+			  return poly;
+			}
 		
 		//delete <b> and </b>, <div ~~~> and </div>
 		public String mod(String anc){

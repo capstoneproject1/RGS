@@ -1,6 +1,14 @@
 package com.example.temp_map;
 
+import java.util.List;
+
+import com.google.android.gms.maps.model.LatLng;
+
 public class NavigationMarkers {
+	
+	//check value for going next
+	private boolean walkingToNext = false;
+	
 	//Go west
 	private String announce;
 	
@@ -16,6 +24,9 @@ public class NavigationMarkers {
 	private String from_lat;
 	private String from_lng;
 	
+	//Smooth Path
+	private LocQueue<LatLng> smoothLoc = null;
+	
 	public NavigationMarkers(String announce, String dist, String time, 
 			String to_lat, String to_lng, String from_lat, String from_lng){
 		this.announce = announce;
@@ -25,6 +36,48 @@ public class NavigationMarkers {
 		this.to_lng = to_lng;
 		this.from_lat = from_lat;
 		this.from_lng = from_lng;
+	}
+
+	public boolean isWalkingToNext() {
+		return walkingToNext;
+	}
+	
+	public int setTrueWalkingToNext() {
+		walkingToNext = true;
+		
+		if(smoothLoc == null){
+			return -1;
+		}
+		
+		return smoothLoc.size();
+	}
+
+	//check for smooth way
+	public boolean isSmoothWay(){
+		if(smoothLoc == null)
+			return false;
+		else if(smoothLoc.size() == 0)
+			return false;
+		else
+			return true;
+	}
+	
+	//add location in smoothLoc List
+	public boolean addSLM(LatLng e){
+		return smoothLoc.add(e);
+	}
+	
+	//delete location in smoothLoc List
+	public LatLng getSLM(int i){
+		return smoothLoc.get(i);
+	}
+	
+	public LocQueue<LatLng> getSmoothLoc() {
+		return smoothLoc;
+	}
+
+	public void setSmoothLoc(LocQueue<LatLng> smoothLoc) {
+		this.smoothLoc = smoothLoc;
 	}
 
 	public String getAnnounce() {

@@ -13,6 +13,7 @@
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@+id/inform"
         android:name="com.google.android.gms.maps.SupportMapFragment" />
 
     <TextView
@@ -36,7 +37,29 @@
         android:layout_alignRight="@+id/map"
         android:background="#77FFFF00"
         android:gravity="center"
-        android:text="LogCat"
+        android:text="LogCat - Bearing Angle Info."
         android:textSize="10pt" />
+    
+    <ImageView
+        android:id="@+id/imageViewArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/map"
+        android:layout_alignTop="@+id/map"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/arrow_up"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/logcatl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/logcat"
+        android:layout_alignLeft="@+id/map"
+        android:layout_alignRight="@+id/map"
+        android:background="#77FF00FF"
+        android:gravity="center"
+        android:text="Logcat - Bearing Location Info." 
+        android:textSize="10pt"/>
 
 </RelativeLayout>
