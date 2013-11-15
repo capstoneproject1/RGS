@@ -1,5 +1,6 @@
 package com.example.temp_map;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import android.view.View.OnTouchListener;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -100,6 +102,10 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	//vibration class
 	Vibrator v;
 	
+	//FastSearch
+	FastSearch fs;
+	Context mainContext;
+	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,6 +116,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
         lc = (TextView)findViewById(R.id.logcat);
         lcl = (TextView)findViewById(R.id.logcatl);
         dest = getIntent().getExtras().getString("dest");
+//        getIntent().get
         System.out.println(dest);
         
         //heading
@@ -346,6 +353,16 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	public void findRoad(SearchMarkers dest){
 		double lat = Double.parseDouble(dest.getLat());
 		double lng = Double.parseDouble(dest.getLng());
+		
+		//Applying new search result one
+		String fileName = "file.txt";
+//		TempFastSearch tfs = new TempFastSearch(fileName, this);
+//		tfs.save(dest.getAddr());
+		HelpFastSearch hfs = new HelpFastSearch(fileName);
+		FastSearch fs = hfs.loadFS();
+		fs.searchExec(dest);
+		hfs.saveFS(fs); 
+		
 		LatLng dest_loc = new LatLng(lat, lng);
 		Navigation nv = new Navigation(loc, dest_loc);
 		mylocqueue = nv.reqNavigation();

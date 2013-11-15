@@ -1,13 +1,34 @@
 package com.example.temp_map;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.AbstractQueue;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
-public class LocQueue<T> extends AbstractQueue<T>{
+public class LocQueue<T> extends AbstractQueue<T> implements Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
 	private LinkedList<T> myqueue = null;
 	
+	private void writeObject(ObjectOutputStream stream)
+            throws IOException {
+        stream.writeObject(myqueue);
+    }
+
+    @SuppressWarnings("unchecked")
+	private void readObject(ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+        myqueue = (LinkedList<T>) stream.readObject();
+    }
+    
 	public LocQueue(){
 		myqueue = new LinkedList<T>();
 	}
@@ -17,6 +38,10 @@ public class LocQueue<T> extends AbstractQueue<T>{
 		return myqueue.get(i);
 	}
 	
+	//Delete in index position
+	public T delete(int i){
+		return myqueue.remove(i);
+	}
 	//Stack Option for popping upper one
 	public T pop(){
 		if(myqueue.size()>0)

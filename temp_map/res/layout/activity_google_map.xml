@@ -40,16 +40,6 @@
         android:text="LogCat - Bearing Angle Info."
         android:textSize="10pt" />
     
-    <ImageView
-        android:id="@+id/imageViewArrow"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/map"
-        android:layout_alignTop="@+id/map"
-        android:layout_centerHorizontal="true"
-        android:src="@drawable/arrow_up"
-        android:visibility="invisible" />
-
     <TextView
         android:id="@+id/logcatl"
         android:layout_width="wrap_content"
@@ -62,4 +52,14 @@
         android:text="Logcat - Bearing Location Info." 
         android:textSize="10pt"/>
 
+    <ImageView
+        android:id="@+id/imageViewArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/map"
+        android:layout_alignTop="@+id/inform"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/arrow_up"
+        android:visibility="invisible" />
+    
 </RelativeLayout>
