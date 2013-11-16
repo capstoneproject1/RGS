@@ -7,11 +7,14 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ExpandableListView;
+import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	
@@ -21,6 +24,8 @@ public class MainActivity extends Activity {
 	List<String> listHeader;
 	HashMap<String, List<String>> listChild;
 	ExpandableListAdapter listAdapter;
+	
+	private final int NEWSEARCH = -1;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
@@ -33,13 +38,37 @@ public class MainActivity extends Activity {
 		listAdapter = new ExpandableListAdapter(this, listHeader, listChild);
 		elv.setAdapter(listAdapter);
 		
+		elv.setOnChildClickListener(new OnChildClickListener() {
+		 
+            @Override
+            public boolean onChildClick(ExpandableListView parent, View v,
+                    int groupPosition, int childPosition, long id) {
+                Intent intent = new Intent(MainActivity.this, ShowMap.class);
+                
+                Log.e("G",String.valueOf(groupPosition));
+                Log.e("C",String.valueOf(childPosition));
+                
+                String item = listChild.get(listHeader.get(groupPosition)).get(childPosition);
+                
+                if(!item.equals("Not Registered")){
+	        		intent.putExtra("dest", item);
+	        		intent.putExtra("group_option", groupPosition);
+	        		intent.putExtra("child_option", childPosition);
+	                startActivity(intent);
+            	}
+                return false;
+            }
+        });
+		 
         destText = (TextView) findViewById(R.id.destText);
         destBtn.setOnClickListener(new OnClickListener() {
         	public void onClick(View v){
         		String destination = destText.getText().toString();
         		Intent intent = new Intent(MainActivity.this, ShowMap.class);
         		intent.putExtra("dest", destination);
-                startActivity(intent);
+        		intent.putExtra("group_option", NEWSEARCH);
+        		intent.putExtra("child_option", NEWSEARCH);
+        		startActivity(intent);
         	}
         });
 	}

@@ -1,6 +1,5 @@
 package com.example.temp_map;
 
-import java.io.File;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +29,6 @@ import android.view.View.OnTouchListener;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -102,9 +100,13 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	//vibration class
 	Vibrator v;
 	
-	//FastSearch
-	FastSearch fs;
-	Context mainContext;
+	//option for not fast search (original search)
+	private final int NEWSEARCH = -1;
+	int group_opt;
+	int child_opt = -1;
+	
+	//variable for fast search
+	HelpFastSearch hfs;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,7 +118,11 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
         lc = (TextView)findViewById(R.id.logcat);
         lcl = (TextView)findViewById(R.id.logcatl);
         dest = getIntent().getExtras().getString("dest");
-//        getIntent().get
+        
+        group_opt = getIntent().getExtras().getInt("group_option");
+        if(group_opt != NEWSEARCH)
+        	child_opt = getIntent().getExtras().getInt("child_option");
+        
         System.out.println(dest);
         
         //heading
@@ -317,10 +323,49 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		if(locTag == 1){
 			tempMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc, 15));
 	        tempMap.addMarker(new MarkerOptions().position(loc));
-	        fd = new FindDest(dest, loc);
-	        List<SearchMarkers> mk = fd.reqDest();
-	        showMarkers(mk);
-	        findRoad(mk.get(0));
+	        
+	        String fileName = "file.txt";
+			hfs = new HelpFastSearch(fileName);
+			FastSearch fs = hfs.loadFS();
+			
+	        //Keyboard search case
+	        if(group_opt == NEWSEARCH){
+	        	fd = new FindDest(dest, loc);
+		        List<SearchMarkers> mk = fd.reqDest();
+		        showMarkers(mk);
+		        applyLog(fs, mk.get(0));
+		        findRoad(mk.get(0));
+	        }
+	        //Log search (FastSearch) case
+	        else{
+	        	SearchMarkers certain_loc;
+	        	
+	        	switch(group_opt){
+	        	//myHome
+	        	case 0:
+	        		certain_loc = fs.getMyHome();
+	        		break;
+	        	//myWork
+	        	case 1:
+	        		certain_loc = fs.getMyWork();
+	        		break;
+	        	//myRecent
+	        	case 2:
+	        		//Totally different indexing system...
+	        		int myrec_len = fs.getMyRecent().size();
+	        		certain_loc = fs.getMyRecent().get(myrec_len-child_opt-1);
+	        		break;
+	        	//myRank
+	        	case 3:
+	        		certain_loc = fs.getMyRank().get(child_opt);
+	        		break;
+	        	default:
+	        		certain_loc = null;	
+	        	}
+	        	showMarker(certain_loc);
+	        	findRoad(certain_loc);
+	        }
+	        
 	        if(mylocqueue.size()>0 && isGPS==true){
 	        	speak(mylocqueue.get(0).getAnnounce());
 	        	bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat()); 
@@ -350,18 +395,15 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		Double.toString(bearingLng)+")");
     }
 
+    //Applying new search result one
+    public void applyLog(FastSearch fs, SearchMarkers dest){
+    	fs.searchExec(dest);
+		hfs.saveFS(fs); 
+    }
+    
 	public void findRoad(SearchMarkers dest){
 		double lat = Double.parseDouble(dest.getLat());
 		double lng = Double.parseDouble(dest.getLng());
-		
-		//Applying new search result one
-		String fileName = "file.txt";
-//		TempFastSearch tfs = new TempFastSearch(fileName, this);
-//		tfs.save(dest.getAddr());
-		HelpFastSearch hfs = new HelpFastSearch(fileName);
-		FastSearch fs = hfs.loadFS();
-		fs.searchExec(dest);
-		hfs.saveFS(fs); 
 		
 		LatLng dest_loc = new LatLng(lat, lng);
 		Navigation nv = new Navigation(loc, dest_loc);
@@ -369,6 +411,19 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		showNMMarkers(loc, dest_loc, mylocqueue);
 	}
 	
+	//Show single marker
+	public void showMarker(SearchMarkers sm){
+		String lat = sm.getLat();
+		String lng = sm.getLng();
+		LatLng temp_loc = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
+		MarkerOptions mo = new MarkerOptions();
+		mo.position(temp_loc);
+		mo.title(sm.getAddr());
+		
+		tempMap.addMarker(mo);
+	}
+	
+	//Show all markers in list
 	public void showMarkers(List<SearchMarkers> mk){
 		String lat;
 		String lng;
@@ -378,7 +433,6 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		}
 //		for(int i=0; i<mk.size(); i++){
 			SearchMarkers tempsm = mk.get(0);
-			tempsm.getAddr();
 			lat = tempsm.getLat();
 			lng = tempsm.getLng();
 			LatLng temp_loc = new LatLng(Double.parseDouble(lat), Double.parseDouble(lng));
