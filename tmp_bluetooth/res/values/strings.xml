@@ -4,5 +4,7 @@
     <string name="app_name">tmp_bluetooth</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+    <string name="title_activity_energy_safe_bluetooth">EnergySafeBluetooth</string>
+    <string name="ble_not_supported">Bluetooth Law Energry is not supported in this device!</string>
 
 </resources>

@@ -10,7 +10,12 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+	<uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
     
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -24,6 +29,10 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name="com.example.tmp_bluetooth.EnergySafeBluetooth"
+            android:label="@string/title_activity_energy_safe_bluetooth" >
         </activity>
     </application>
 
