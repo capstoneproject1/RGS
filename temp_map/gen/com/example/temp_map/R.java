@@ -187,14 +187,17 @@ containing a value of this type.
         public static final int ic_plusone_tall_off_client=0x7f02001d;
     }
     public static final class id {
-        public static final int action_settings=0x7f05000c;
-        public static final int destButton=0x7f05000b;
-        public static final int destText=0x7f05000a;
+        public static final int action_settings=0x7f05000f;
+        public static final int child=0x7f05000d;
+        public static final int destButton=0x7f05000a;
+        public static final int destText=0x7f05000b;
+        public static final int expandableListView1=0x7f05000c;
+        public static final int header=0x7f05000e;
         public static final int hybrid=0x7f050004;
-        public static final int imageViewArrow=0x7f050008;
+        public static final int imageViewArrow=0x7f050009;
         public static final int inform=0x7f050006;
         public static final int logcat=0x7f050007;
-        public static final int logcatl=0x7f050009;
+        public static final int logcatl=0x7f050008;
         public static final int map=0x7f050005;
         public static final int none=0x7f050000;
         public static final int normal=0x7f050001;
@@ -204,6 +207,8 @@ containing a value of this type.
     public static final class layout {
         public static final int activity_google_map=0x7f030000;
         public static final int input_dest=0x7f030001;
+        public static final int list_child=0x7f030002;
+        public static final int list_group=0x7f030003;
     }
     public static final class menu {
         public static final int google_map=0x7f090000;
