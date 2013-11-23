@@ -25,11 +25,13 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -108,6 +110,15 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	//variable for fast search
 	HelpFastSearch hfs;
 	
+	//variables for test (sensor detection or not)
+	ToggleButton tb;
+	boolean s_on = false;
+	boolean set_std = false;
+	float std_distance = -1;
+	
+	//variables for accurate direction
+	HelpCompass hc = null;
+	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -118,6 +129,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
         lc = (TextView)findViewById(R.id.logcat);
         lcl = (TextView)findViewById(R.id.logcatl);
         dest = getIntent().getExtras().getString("dest");
+        tb = (ToggleButton) findViewById(R.id.toggleButton1);
         
         group_opt = getIntent().getExtras().getInt("group_option");
         if(group_opt != NEWSEARCH)
@@ -133,6 +145,15 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
         
  		//vibration
 		v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+		
+		tb.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				s_on = tb.isChecked();
+			}
+		});
 		
         GooglePlayServicesUtil.isGooglePlayServicesAvailable(ShowMap.this);
         lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -302,11 +323,14 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
         mSensorManager.unregisterListener(this);
     }
     
+    //From now location, right before marker's latitude and longitude
+    private Double prev_lat = 0.0;
+    private Double prev_lng = 0.0;
     
+    //REAL onLocationChanged
     public void realOnLoctionChanged(Location arg0, boolean isGPS){
     	calltime ++;
-//    	if(!isGPS)
-//    		lc.setText("INDOOR: "+String.valueOf(calltime));
+    	
 		if(resultTag == false)
 			return;
 		
@@ -328,7 +352,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 			hfs = new HelpFastSearch(fileName);
 			FastSearch fs = hfs.loadFS();
 			
-	        //Keyboard search case
+			//Keyboard search case
 	        if(group_opt == NEWSEARCH){
 	        	fd = new FindDest(dest, loc);
 		        List<SearchMarkers> mk = fd.reqDest();
@@ -338,42 +362,18 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	        }
 	        //Log search (FastSearch) case
 	        else{
-	        	SearchMarkers certain_loc;
-	        	
-	        	switch(group_opt){
-	        	//myHome
-	        	case 0:
-	        		certain_loc = fs.getMyHome();
-	        		break;
-	        	//myWork
-	        	case 1:
-	        		certain_loc = fs.getMyWork();
-	        		break;
-	        	//myRecent
-	        	case 2:
-	        		//Totally different indexing system...
-	        		int myrec_len = fs.getMyRecent().size();
-	        		certain_loc = fs.getMyRecent().get(myrec_len-child_opt-1);
-	        		break;
-	        	//myRank
-	        	case 3:
-	        		certain_loc = fs.getMyRank().get(child_opt);
-	        		break;
-	        	default:
-	        		certain_loc = null;	
-	        	}
+	        	SearchMarkers certain_loc = returnFastLoc(fs, group_opt, child_opt);
 	        	showMarker(certain_loc);
 	        	findRoad(certain_loc);
 	        }
 	        
+	        
 	        if(mylocqueue.size()>0 && isGPS==true){
 	        	speak(mylocqueue.get(0).getAnnounce());
-	        	bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat()); 
-	        	bearingLng = Double.parseDouble(mylocqueue.get(0).getFrom_lng());
+	        	setBearingSt(lat, lng);
 			}else if(mylocqueue.size()>0 && isGPS==false){
 	        	speak("Go outside! Refer the direction to next marker.");
-	        	bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat()); 
-	        	bearingLng = Double.parseDouble(mylocqueue.get(0).getFrom_lng());
+	        	setBearingSt(lat, lng);
 			}else{
 	        	speak("No result");
 	        	resultTag = false;
@@ -382,25 +382,78 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 	        locTag = 0;
 		}else{
 			// heading += geoField.getDeclination();
-			compareLocation(loc, mylocqueue);
+			compareLocation(arg0, mylocqueue);
 		}
-		
-		Location newfromdest = new Location("newdest");
-        newfromdest.setLatitude(bearingLat);
-        newfromdest.setLongitude(bearingLng);
-		bearing = arg0.bearingTo(newfromdest);
-		float dist = arg0.distanceTo(newfromdest);
-		lcl.setText(Float.toString(dist)+" => ("+
-		Double.toString(bearingLat)+", "+
-		Double.toString(bearingLng)+")");
+		if(hc != null){
+			Location realBearing = hc.getBearingDest(arg0);
+	        bearing = arg0.bearingTo(realBearing);
+			float dist = arg0.distanceTo(realBearing);
+			lcl.setText(Float.toString(dist)+" => ("+
+			Double.toString(realBearing.getLatitude())+", "+
+			Double.toString(realBearing.getLongitude())+")");
+		}
     }
-
+    
+    //set bearing for step marker
+    public void setBearingSt(Double lat, Double lng){
+    	bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat()); 
+    	bearingLng = Double.parseDouble(mylocqueue.get(0).getFrom_lng());
+    	hc = new HelpCompass(lat, lng, bearingLat, bearingLng);
+    	List<LatLng> tm = hc.getTemp_dest();
+    	for(int i=0; i<16; i++){
+    		tempMap.addMarker(new MarkerOptions().position(tm.get(i)));
+    	}
+    }
+    
+    //set bearing for smooth marker
+    public void setBearingSm(Double lat, Double lng, NavigationMarkers nm){
+		bearingLat = nm.getSmoothLoc().get(0).latitude;
+		bearingLng = nm.getSmoothLoc().get(0).longitude;
+		hc = new HelpCompass(lat, lng, bearingLat, bearingLng);
+		List<LatLng> tm = hc.getTemp_dest();
+    	for(int i=0; i<16; i++){
+    		tempMap.addMarker(new MarkerOptions().position(tm.get(i)));
+    	}
+    }
+    
+    
+    //With FastSearch, it can return destination without Search API
+    public SearchMarkers returnFastLoc(FastSearch fs, int group_opt, int child_opt){
+    	SearchMarkers certain_loc;
+    	
+    	switch(group_opt){
+    	//myHome
+    	case 0:
+    		certain_loc = fs.getMyHome();
+    		break;
+    	//myWork
+    	case 1:
+    		certain_loc = fs.getMyWork();
+    		break;
+    	//myRecent
+    	case 2:
+    		//Totally different indexing system...
+    		int myrec_len = fs.getMyRecent().size();
+    		certain_loc = fs.getMyRecent().get(myrec_len-child_opt-1);
+    		break;
+    	//myRank
+    	case 3:
+    		certain_loc = fs.getMyRank().get(child_opt);
+    		break;
+    	default:
+    		certain_loc = null;	
+    	}
+    	
+    	return certain_loc;
+    }
+    
     //Applying new search result one
     public void applyLog(FastSearch fs, SearchMarkers dest){
     	fs.searchExec(dest);
 		hfs.saveFS(fs); 
     }
     
+    //Find Navigation from my location to destination
 	public void findRoad(SearchMarkers dest){
 		double lat = Double.parseDouble(dest.getLat());
 		double lng = Double.parseDouble(dest.getLng());
@@ -423,7 +476,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		tempMap.addMarker(mo);
 	}
 	
-	//Show all markers in list
+	//Show all markers of destination in list
 	public void showMarkers(List<SearchMarkers> mk){
 		String lat;
 		String lng;
@@ -445,6 +498,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 //		}
 	}
 	
+	//show all Navigation Markers
 	public void showNMMarkers(LatLng src, LatLng dst, LocQueue<NavigationMarkers> mylocqueue){
 		String lat;
 		String lng;
@@ -482,52 +536,55 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		tempMap.addPolyline(plo);
 	}
 	
+	//checking whether meeting marker or not
 	private boolean meetMarker = false;
-	//compare now location with step marker
-	public void compareLocation(LatLng now_loc, LocQueue<NavigationMarkers> mylocqueue){
+	
+	//compare now location with step markers and smooth markers
+	public void compareLocation(Location now_arg0, LocQueue<NavigationMarkers> mylocqueue){
 		int mlqsize = mylocqueue.size();
+		
+		//checking all step markers and all smooth markers of first step marker
 		for(int i=0; i<mlqsize; i++){
 			NavigationMarkers nm = mylocqueue.get(i);
 			
-			//only first one, and if user pass announcement location
+			//only first step marker, and if user pass announcement location
 			if(nm.isWalkingToNext() && i==0){
-				//checking smooth or next one
+				//checking smooth markers
 				int gslsize = nm.getSmoothLoc().size();
 				for(int j=0; j<gslsize; j++){
 					LatLng temp = nm.getSmoothLoc().get(j);
-					if(now_loc.latitude - temp.latitude < 0.0001 &&
-							now_loc.latitude - temp.latitude > -0.0001 &&
-							now_loc.longitude - temp.longitude < 0.0001 &&
-							now_loc.longitude - temp.longitude > -0.0001){
+					
+					//Exact Range
+					if(checkNear(now_arg0, temp, null)){
+						prev_lat = temp.latitude;
+						prev_lng = temp.longitude;
 						
-						//if j=3, then 0,1,2,3 delete
-						
+						//delete
 						if(nm.getSmoothLoc().size() == j+1){
 							mylocqueue.remove();
 							if(mylocqueue.size() > 0){
-								bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat());
-								bearingLng = Double.parseDouble(mylocqueue.get(0).getFrom_lng());
+								setBearingSt(prev_lat, prev_lng);
 							}
 						}else{
 							for(int k=0; k<=j; k++)
 								nm.getSmoothLoc().remove();
-							bearingLat = nm.getSmoothLoc().get(0).latitude;
-							bearingLng = nm.getSmoothLoc().get(0).longitude;
+							setBearingSm(prev_lat, prev_lng, nm);
 						}
 						meetMarker = true;
 						break;
 					}
 				}
 			}
+			
 			//false => not smooth, check my from_loc (exact location included Announcement)
 			//Not related in index, all checking (default all announce marker set to FALSE)
 			else if(!nm.isWalkingToNext()){
-				//checking now marker
-				if(now_loc.latitude - Double.parseDouble(nm.getFrom_lat()) < 0.0001 &&
-						now_loc.latitude - Double.parseDouble(nm.getFrom_lat()) > -0.0001 &&
-						now_loc.longitude - Double.parseDouble(nm.getFrom_lng()) < 0.0001 &&
-						now_loc.longitude - Double.parseDouble(nm.getFrom_lng()) > -0.0001){
+				//checking step markers
+				//Exact Range
+				if(checkNear(now_arg0, null, nm)){
 					speak(nm.getAnnounce());
+					prev_lat = Double.parseDouble(nm.getFrom_lat());
+					prev_lng = Double.parseDouble(nm.getFrom_lng());
 					if(nm.setTrueWalkingToNext() <= 0){
 						//-1: smoothLoc == NULL => next one
 						//0: smoothLoc has no member => next one
@@ -536,9 +593,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 						for(int k=0; k<=i; k++)
 							mylocqueue.remove();
 						if(mylocqueue.size() > 0){
-							bearingLat = Double.parseDouble(mylocqueue.get(0).getFrom_lat());
-							bearingLng = Double.parseDouble(mylocqueue.get(0).getFrom_lng());
-							
+							setBearingSt(prev_lat, prev_lng);
 						}else{
 							//arrival
 							/*
@@ -552,8 +607,7 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 						//exclude itself, remove them all
 						for(int k=0; k<i; k++)
 							mylocqueue.remove();
-						bearingLat = nm.getSmoothLoc().get(0).latitude;
-						bearingLng = nm.getSmoothLoc().get(0).longitude;
+						setBearingSm(prev_lat, prev_lng, nm);
 						meetMarker = true;
 					}
 				}
@@ -567,7 +621,40 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		}
 	}
 	
+	//2 cases (Smooth Marker or Step Marker)
+	//return near or not
+	public boolean checkNear(Location my, LatLng smooth, NavigationMarkers step){
+		float dist = returnDist(my, smooth, step);
+		if(dist == -1){
+			Log.e("ERR", "my, smooth, step are all set");
+			return false;
+		}
+		
+		return dist < 8.0;
+	}
+		
+	//return distance from my location
+	public float returnDist(Location my, LatLng smooth, NavigationMarkers step){
+		//step case
+		if(smooth == null){
+			String step_lat = step.getFrom_lat();
+			String step_lng = step.getFrom_lng();
+			Location step_loc = new Location("newdest");
+			step_loc.setLatitude(Double.parseDouble(step_lat));
+			step_loc.setLongitude(Double.parseDouble(step_lng));
+			return my.distanceTo(step_loc);
+		}
+		//smooth case
+		else if(step == null){
+			Location smooth_loc = new Location("newdest");
+			smooth_loc.setLatitude(smooth.latitude);
+			smooth_loc.setLongitude(smooth.longitude);
+			return my.distanceTo(smooth_loc);
+		} 
+		return -1;
+	}
 	
+	//speak given text
 	public void speak(String tmp){
 		if(tmp==null)
 			return;
@@ -578,7 +665,6 @@ public class ShowMap extends FragmentActivity implements SensorEventListener, On
 		checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
 		startActivityForResult(checkIntent, 0);
 		tts = new TextToSpeech(this,this);
-//		James tts = new James(tmp);
 	}
 	
 	//active compass

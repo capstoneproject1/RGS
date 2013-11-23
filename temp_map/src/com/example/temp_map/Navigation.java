@@ -196,6 +196,7 @@ public class Navigation {
 					System.out.println("announce: " + announce);
 					System.out.println("latitude: " + from_lat);
 					System.out.println("longitude: " + from_lng);
+					System.out.println("distance: " + dist);
 					Log.d("polyline: ", encode_polyline);
 				}
 				
