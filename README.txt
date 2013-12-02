@@ -18,3 +18,6 @@ TTS
 activity_google_map_transparent.xml
 	: For transparent layout in temp_map. It's not appropriate to testing.
 	Using this, can't touch Google Map.
+
+Application_Class&Function_Explanation.docx
+	: For final report. Now, there is only list of function and variable of each class.
