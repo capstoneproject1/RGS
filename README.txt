@@ -12,6 +12,9 @@ tmp_bluetooth
 TTS
 	: Text To Speech (already added in 'temp_map')
 
+BluetoothChat
+	: Bluetooth Chat 
+
 
 < FILE >
 
