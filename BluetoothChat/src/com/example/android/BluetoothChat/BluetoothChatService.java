@@ -368,25 +368,25 @@ public class BluetoothChatService {
                 	tmp = device.createRfcommSocketToServiceRecord(
                             MY_UUID_SECURE);
                 } else {
-                	tmp = device.createInsecureRfcommSocketToServiceRecord(
-                            MY_UUID_INSECURE);
-//                	m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] { int.class });
-//                	tmp = (BluetoothSocket)m.invoke(mmDevice, Integer.valueOf(1));
+//                	tmp = device.createInsecureRfcommSocketToServiceRecord(
+//                            MY_UUID_INSECURE);
+                	m = device.getClass().getMethod("createInsecureRfcommSocket", new Class[] { int.class });
+                	tmp = (BluetoothSocket)m.invoke(mmDevice, Integer.valueOf(1));
 					
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
-//            } catch (NoSuchMethodException e2) {
-//            	e2.printStackTrace();
-//            } catch (IllegalArgumentException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			} catch (IllegalAccessException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			} catch (InvocationTargetException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
+            } catch (NoSuchMethodException e2) {
+            	e2.printStackTrace();
+            } catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
             mmSocket = tmp;
         }
